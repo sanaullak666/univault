@@ -1,0 +1,3 @@
+<?php
+require_once __DIR__.'/includes/functions.php';$id=(int)($_GET['id']??0);$s=$pdo->prepare("SELECT stored_name,mime_type,original_name,uploaded_by,status FROM resources WHERE id=?");$s->execute([$id]);$r=$s->fetch();$u=current_user();if(!$r||$r['mime_type']!=='application/pdf'||($r['status']!=='approved'&&(!$u||($u['id']!=$r['uploaded_by']&&$u['role']!=='admin')))){http_response_code(404);exit('Preview unavailable.');}$path=UPLOAD_DIR.'/'.$r['stored_name'];if(!is_file($path)){http_response_code(404);exit('File missing.');}header('Content-Type: application/pdf');header('Content-Disposition: inline; filename="'.rawurlencode($r['original_name']).'"');header('X-Content-Type-Options: nosniff');readfile($path);
+?>

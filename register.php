@@ -1,0 +1,12 @@
+<?php
+require_once __DIR__.'/includes/functions.php';
+if(current_user()) redirect('dashboard.php');
+$errors=[];
+if($_SERVER['REQUEST_METHOD']==='POST'){ verify_csrf(); $name=trim($_POST['name']??''); $email=strtolower(trim($_POST['email']??'')); $password=$_POST['password']??''; $role=$_POST['role']??'student'; $department=(int)($_POST['department_id']??0);
+ if($name===''||!filter_var($email,FILTER_VALIDATE_EMAIL)||strlen($password)<8||!in_array($role,['student','faculty'],true)) $errors[]='Enter valid details. Password must contain at least 8 characters.';
+ else { try{$s=$pdo->prepare("INSERT INTO users(name,email,password_hash,role,department_id,status) VALUES(?,?,?,?,?,'active')");$s->execute([$name,$email,password_hash($password,PASSWORD_DEFAULT),$role,$department?:null]);flash('success','Account created. You can now sign in.');redirect('login.php');}catch(PDOException $e){$errors[]='That email address is already registered.';} }
+}
+$departments=$pdo->query("SELECT id,name FROM departments ORDER BY name")->fetchAll(); $page_title='Create account'; require __DIR__.'/includes/header.php'; ?>
+<div class="auth-wrap"><form class="form-card" method="post"><span class="eyebrow">JOIN THE COMMUNITY</span><h1>Create your account</h1><p>Share and discover academic resources.</p><?php foreach($errors as $x): ?><div class="alert error"><?= e($x) ?></div><?php endforeach; ?><?= csrf_field() ?>
+<label>Full name<input name="name" required maxlength="120"></label><label>University email<input type="email" name="email" required></label><label>Password<input type="password" name="password" minlength="8" required></label><label>Account type<select name="role"><option value="student">Student</option><option value="faculty">Faculty</option></select></label><label>Department<select name="department_id"><option value="">Choose department (optional)</option><?php foreach($departments as $d): ?><option value="<?= $d['id'] ?>"><?= e($d['name']) ?></option><?php endforeach; ?></select></label><button class="btn primary full">Create account</button><p class="form-foot">Already registered? <a href="<?= url('login.php') ?>">Sign in</a></p></form></div>
+<?php require __DIR__.'/includes/footer.php'; ?>

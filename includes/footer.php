@@ -1,0 +1,2 @@
+</main><footer class="footer"><div style="display:flex;align-items:center;gap:14px"><img src="<?= url('assets/logo.png') ?>" alt="UniVault" style="height:40px;width:auto"><div><strong>UniVault</strong><p>One university. A shared knowledge space.</p></div></div></footer>
+<script src="<?= url('assets/app.js') ?>"></script></body></html>

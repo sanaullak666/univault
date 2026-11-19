@@ -1,0 +1,5 @@
+.vercel/
+uploads/*
+!uploads/.htaccess
+!uploads/index.html
+*.log

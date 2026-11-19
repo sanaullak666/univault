@@ -1,0 +1,4 @@
+<?php
+require_once __DIR__.'/../includes/functions.php';header('Content-Type: application/json; charset=utf-8');
+$q=trim($_GET['q']??'');$type=$_GET['type']??'';$sql="SELECT r.id,r.title,r.type,r.original_name,s.name subject,s.code FROM resources r LEFT JOIN subjects s ON s.id=r.subject_id WHERE r.status='approved' AND (r.title LIKE ? OR r.description LIKE ? OR s.name LIKE ? OR s.code LIKE ?)";$like='%'.$q.'%';$args=[$like,$like,$like,$like];if(in_array($type,['question_paper','syllabus','notes','assignment','presentation','other'],true)){$sql.=" AND r.type=?";$args[]=$type;}$sql.=" ORDER BY r.created_at DESC LIMIT 30";$st=$pdo->prepare($sql);$st->execute($args);echo json_encode(['results'=>$st->fetchAll()],JSON_UNESCAPED_UNICODE);
+?>
