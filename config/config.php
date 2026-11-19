@@ -1,5 +1,8 @@
 <?php
 declare(strict_types=1);
+
+error_reporting(E_ALL & ~E_DEPRECATED);
+
 if (session_status() === PHP_SESSION_NONE) session_start();
 define('APP_NAME', 'UniVault');
 
@@ -24,7 +27,10 @@ try {
         PDO::ATTR_EMULATE_PREPARES => false
     ];
     if (getenv('DB_SSL_CA')) {
-        $options[PDO::MYSQL_ATTR_SSL_CA] = getenv('DB_SSL_CA');
+        $sslCaConst = defined('Pdo\Mysql::ATTR_SSL_CA') ? constant('Pdo\Mysql::ATTR_SSL_CA') : @constant('PDO::MYSQL_ATTR_SSL_CA');
+        if ($sslCaConst !== null) {
+            $options[$sslCaConst] = getenv('DB_SSL_CA');
+        }
     }
     $pdo = new PDO($dsn, $DB_USER, $DB_PASS, $options);
 } catch (PDOException $e) {
