@@ -37,13 +37,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!isset($valid[$ext]) || $valid[$ext] !== $mime) {
             $errors[] = 'Allowed formats: PDF, DOC, DOCX, PPT and PPTX.';
         } else {
-            if (!is_dir(UPLOAD_DIR)) {
-                mkdir(UPLOAD_DIR, 0755, true);
-            }
-            $stored = bin2hex(random_bytes(18)) . '.' . $ext;
-            $dest = UPLOAD_DIR . '/' . $stored;
+            $fileData = file_get_contents($tmp);
+            if ($fileData === false) {
+                $errors[] = 'Could not read uploaded file content.';
+            } else {
+                $stored = bin2hex(random_bytes(18)) . '.' . $ext;
 
-            if (move_uploaded_file($tmp, $dest)) {
                 try {
                     // Resolve or create Course
                     $courseId = null;
@@ -87,6 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         }
                     }
 
+                    // Insert metadata into resources table
                     $s = $pdo->prepare("INSERT INTO resources(title,description,type,department_id,course_id,semester_id,subject_id,module_id,exam_year,exam_type,original_name,stored_name,mime_type,file_size,uploaded_by,status) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'pending')");
                     $s->execute([
                         $title,
@@ -106,15 +106,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         current_user()['id']
                     ]);
                     $id = (int)$pdo->lastInsertId();
+
+                    // Insert file bytes persistently into database
+                    $fStmt = $pdo->prepare("INSERT INTO resource_files (resource_id, file_data) VALUES (?, ?)");
+                    $fStmt->execute([$id, $fileData]);
+
+                    // Optional local disk cache
+                    if (!is_dir(UPLOAD_DIR)) {
+                        @mkdir(UPLOAD_DIR, 0755, true);
+                    }
+                    @file_put_contents(UPLOAD_DIR . '/' . $stored, $fileData);
+
                     log_activity($pdo, current_user()['id'], 'upload', $id);
                     flash('success', 'Upload received. It will appear in the public library after administrator approval.');
                     redirect('dashboard.php');
                 } catch (Throwable $e) {
-                    @unlink($dest);
                     $errors[] = 'Could not save resource details. ' . $e->getMessage();
                 }
-            } else {
-                $errors[] = 'Could not store uploaded file.';
             }
         }
     }
